@@ -1,23 +1,4 @@
 services:
-  postgres:
-    image: postgres:15
-    container_name: prompt_postgres
-    env_file:
-      - ./backend/.env
-    environment:
-      POSTGRES_USER: ${DB_USER:-promptuser}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-promptpass}
-      POSTGRES_DB: ${DB_NAME:-promptdb}
-    ports:
-      - '5432:5432'
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U promptuser -d promptdb']
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
   backend:
     build:
       context: ./backend
@@ -26,19 +7,10 @@ services:
     env_file:
       - ./backend/.env
     environment:
-      DB_HOST: postgres
-      DB_PORT: ${DB_PORT:-5432}
-      DB_USER: ${DB_USER:-promptuser}
-      DB_PASSWORD: ${DB_PASSWORD:-promptpass}
-      DB_NAME: ${DB_NAME:-promptdb}
-      DB_SSLMODE: ${DB_SSLMODE:-disable}
       PORT: ${PORT:-8080}
       ENV: ${ENV:-development}
     ports:
       - '8080:8080'
-    depends_on:
-      postgres:
-        condition: service_healthy
 
   frontend:
     build:
@@ -54,6 +26,3 @@ services:
       - '3000:3000'
     depends_on:
       - backend
-
-volumes:
-  postgres_data:
