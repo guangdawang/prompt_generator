@@ -42,6 +42,14 @@
 cd prompt_generator
 ```
 
+1. 配置环境变量（可选但推荐）：
+
+```bash
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env
+# 修改 APP_DOMAIN 等配置
+```
+
 1. 启动所有服务：
 
 ```bash
@@ -50,9 +58,10 @@ docker-compose up -d
 
 1. 访问应用：
 
-- 前端: <http://localhost:3000>
-- 后端 API: <http://localhost:8080/api>
-- 数据库: localhost:5432
+默认 NGINX 不映射端口，仅供容器内部访问。如果需要从宿主机访问，请在 NGINX 服务中添加端口映射（如 `80:80`），然后通过域名访问：
+
+- 前端: <http://your-domain>
+- 后端 API: <http://your-domain/api>
 
 ### 手动启动
 
