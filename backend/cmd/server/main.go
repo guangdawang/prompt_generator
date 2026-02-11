@@ -6,6 +6,7 @@ import (
 
 	"prompt-backend/internal/database"
 	"prompt-backend/internal/handlers"
+	"prompt-backend/internal/middleware"
 	"prompt-backend/internal/models"
 	"prompt-backend/internal/services"
 	"prompt-backend/internal/services/repository"
@@ -51,20 +52,11 @@ func main() {
 		log.Fatalf("Failed to set trusted proxies: %v", err)
 	}
 
-	// CORS 中间件
-	router.Use(func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
-
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(204)
-			return
-		}
-
-		c.Next()
-	})
+	// 安全与稳健性中间件
+	router.Use(middleware.SecurityHeaders())
+	router.Use(middleware.CORSFromEnv())
+	router.Use(middleware.RequestSizeLimitFromEnv())
+	router.Use(middleware.RateLimitFromEnv())
 
 	// 路由组
 	api := router.Group("/api")

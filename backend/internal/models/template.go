@@ -3,10 +3,28 @@ package models
 import (
 	"database/sql/driver"
 	"encoding/json"
+	"errors"
+	"fmt"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
 )
+
+const (
+	MaxTemplateNameLen        = 200
+	MaxTemplateDescriptionLen = 2000
+	MaxTemplateContentLen     = 10000
+	MaxCategoryLen            = 100
+	MaxVariables              = 50
+	MaxVariableNameLen        = 100
+	MaxVariableDisplayNameLen = 100
+	MaxVariableDescriptionLen = 2000
+	MaxVariableValueLen       = 1000
+)
+
+var variableNamePattern = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
 
 // JSONB 类型用于处理 PostgreSQL 的 JSONB 类型
 type JSONB json.RawMessage
@@ -74,6 +92,24 @@ type GenerateRequest struct {
 	Variables  map[string]string `json:"variables" binding:"required"`
 }
 
+func (r *GenerateRequest) Validate() error {
+	if r.TemplateID == uuid.Nil {
+		return errors.New("template_id is required")
+	}
+	if len(r.Variables) > MaxVariables {
+		return fmt.Errorf("too many variables (max %d)", MaxVariables)
+	}
+	for name, value := range r.Variables {
+		if err := validateVariableKey(name); err != nil {
+			return err
+		}
+		if len(value) > MaxVariableValueLen {
+			return fmt.Errorf("variable value too long (max %d)", MaxVariableValueLen)
+		}
+	}
+	return nil
+}
+
 // GenerateResponse 生成提示词响应
 type GenerateResponse struct {
 	Result string `json:"result"`
@@ -82,12 +118,40 @@ type GenerateResponse struct {
 
 // CreateTemplateRequest 创建模板请求
 type CreateTemplateRequest struct {
-	Name        string            `json:"name" binding:"required"`
-	Description string            `json:"description"`
-	Content     string            `json:"content" binding:"required"`
+	Name        string             `json:"name" binding:"required"`
+	Description string             `json:"description"`
+	Content     string             `json:"content" binding:"required"`
 	Variables   []TemplateVariable `json:"variables"`
-	Category    string            `json:"category"`
-	IsPublic    bool              `json:"is_public"`
+	Category    string             `json:"category"`
+	IsPublic    bool               `json:"is_public"`
+}
+
+func (r *CreateTemplateRequest) Validate() error {
+	name := strings.TrimSpace(r.Name)
+	if name == "" {
+		return errors.New("name is required")
+	}
+	if len(name) > MaxTemplateNameLen {
+		return fmt.Errorf("name too long (max %d)", MaxTemplateNameLen)
+	}
+	if len(r.Description) > MaxTemplateDescriptionLen {
+		return fmt.Errorf("description too long (max %d)", MaxTemplateDescriptionLen)
+	}
+	if err := ValidateTemplateContent(r.Content); err != nil {
+		return err
+	}
+	if err := ValidateCategoryValue(r.Category); err != nil {
+		return err
+	}
+	if len(r.Variables) > MaxVariables {
+		return fmt.Errorf("too many variables (max %d)", MaxVariables)
+	}
+	for _, variable := range r.Variables {
+		if err := validateTemplateVariable(variable); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // UpdateTemplateRequest 更新模板请求
@@ -98,4 +162,97 @@ type UpdateTemplateRequest struct {
 	Variables   []TemplateVariable `json:"variables"`
 	Category    *string            `json:"category"`
 	IsPublic    *bool              `json:"is_public"`
+}
+
+func (r *UpdateTemplateRequest) Validate() error {
+	if r.Name != nil {
+		name := strings.TrimSpace(*r.Name)
+		if name == "" {
+			return errors.New("name cannot be empty")
+		}
+		if len(name) > MaxTemplateNameLen {
+			return fmt.Errorf("name too long (max %d)", MaxTemplateNameLen)
+		}
+	}
+	if r.Description != nil && len(*r.Description) > MaxTemplateDescriptionLen {
+		return fmt.Errorf("description too long (max %d)", MaxTemplateDescriptionLen)
+	}
+	if r.Content != nil {
+		if err := ValidateTemplateContent(*r.Content); err != nil {
+			return err
+		}
+	}
+	if r.Category != nil {
+		if err := ValidateCategoryValue(*r.Category); err != nil {
+			return err
+		}
+	}
+	if r.Variables != nil {
+		if len(r.Variables) > MaxVariables {
+			return fmt.Errorf("too many variables (max %d)", MaxVariables)
+		}
+		for _, variable := range r.Variables {
+			if err := validateTemplateVariable(variable); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func ValidateTemplateContent(content string) error {
+	trimmed := strings.TrimSpace(content)
+	if trimmed == "" {
+		return errors.New("content is required")
+	}
+	if len(trimmed) > MaxTemplateContentLen {
+		return fmt.Errorf("content too long (max %d)", MaxTemplateContentLen)
+	}
+	return nil
+}
+
+func ValidateCategoryValue(category string) error {
+	if category == "" {
+		return nil
+	}
+	if len(category) > MaxCategoryLen {
+		return fmt.Errorf("category too long (max %d)", MaxCategoryLen)
+	}
+	return nil
+}
+
+func validateTemplateVariable(variable TemplateVariable) error {
+	name := strings.TrimSpace(variable.Name)
+	if name == "" {
+		return errors.New("variable name is required")
+	}
+	if len(name) > MaxVariableNameLen {
+		return fmt.Errorf("variable name too long (max %d)", MaxVariableNameLen)
+	}
+	if !variableNamePattern.MatchString(name) {
+		return errors.New("invalid variable name format")
+	}
+	if len(variable.DisplayName) > MaxVariableDisplayNameLen {
+		return fmt.Errorf("variable display_name too long (max %d)", MaxVariableDisplayNameLen)
+	}
+	if len(variable.Description) > MaxVariableDescriptionLen {
+		return fmt.Errorf("variable description too long (max %d)", MaxVariableDescriptionLen)
+	}
+	if len(variable.DefaultValue) > MaxVariableValueLen {
+		return fmt.Errorf("variable default_value too long (max %d)", MaxVariableValueLen)
+	}
+	return nil
+}
+
+func validateVariableKey(name string) error {
+	if strings.TrimSpace(name) == "" {
+		return errors.New("variable name is required")
+	}
+	if len(name) > MaxVariableNameLen {
+		return fmt.Errorf("variable name too long (max %d)", MaxVariableNameLen)
+	}
+	if !variableNamePattern.MatchString(name) {
+		return errors.New("invalid variable name format")
+	}
+	return nil
 }

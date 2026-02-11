@@ -4,10 +4,11 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"prompt-backend/internal/models"
 	"prompt-backend/internal/services"
+
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 // TemplateHandler 模板处理器
@@ -24,13 +25,17 @@ func NewTemplateHandler(service *services.TemplateService) *TemplateHandler {
 func (h *TemplateHandler) Generate(c *gin.Context) {
 	var req models.GenerateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, "invalid request payload")
+		return
+	}
+	if err := req.Validate(); err != nil {
+		respondError(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	result, err := h.service.GeneratePrompt(req.TemplateID, req.Variables)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		respondInternalError(c, err)
 		return
 	}
 
@@ -44,7 +49,11 @@ func (h *TemplateHandler) Generate(c *gin.Context) {
 func (h *TemplateHandler) CreateTemplate(c *gin.Context) {
 	var req models.CreateTemplateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, "invalid request payload")
+		return
+	}
+	if err := req.Validate(); err != nil {
+		respondError(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -53,7 +62,7 @@ func (h *TemplateHandler) CreateTemplate(c *gin.Context) {
 
 	template, err := h.service.CreateTemplate(req, userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		respondInternalError(c, err)
 		return
 	}
 
@@ -65,13 +74,13 @@ func (h *TemplateHandler) GetTemplate(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid template ID"})
+		respondError(c, http.StatusBadRequest, "invalid template ID")
 		return
 	}
 
 	template, err := h.service.GetTemplate(id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Template not found"})
+		respondError(c, http.StatusNotFound, "template not found")
 		return
 	}
 
@@ -81,6 +90,10 @@ func (h *TemplateHandler) GetTemplate(c *gin.Context) {
 // GetTemplates 获取模板列表
 func (h *TemplateHandler) GetTemplates(c *gin.Context) {
 	category := c.Query("category")
+	if err := models.ValidateCategoryValue(category); err != nil {
+		respondError(c, http.StatusBadRequest, err.Error())
+		return
+	}
 	pageStr := c.DefaultQuery("page", "1")
 	pageSizeStr := c.DefaultQuery("page_size", "20")
 
@@ -88,29 +101,42 @@ func (h *TemplateHandler) GetTemplates(c *gin.Context) {
 	if err != nil {
 		page = 1
 	}
+	if page < 1 {
+		page = 1
+	}
 
 	pageSize, err := strconv.Atoi(pageSizeStr)
 	if err != nil {
 		pageSize = 20
 	}
+	if pageSize < 1 {
+		pageSize = 20
+	}
+	if pageSize > 100 {
+		pageSize = 100
+	}
 
 	templates, err := h.service.GetTemplates(category, page, pageSize)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		respondInternalError(c, err)
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"data":       templates,
-		"page":       page,
-		"page_size":  pageSize,
-		"total":      len(templates),
+		"data":      templates,
+		"page":      page,
+		"page_size": pageSize,
+		"total":     len(templates),
 	})
 }
 
 // GetPublicTemplates 获取公开模板
 func (h *TemplateHandler) GetPublicTemplates(c *gin.Context) {
 	category := c.Query("category")
+	if err := models.ValidateCategoryValue(category); err != nil {
+		respondError(c, http.StatusBadRequest, err.Error())
+		return
+	}
 	pageStr := c.DefaultQuery("page", "1")
 	pageSizeStr := c.DefaultQuery("page_size", "20")
 
@@ -118,23 +144,32 @@ func (h *TemplateHandler) GetPublicTemplates(c *gin.Context) {
 	if err != nil {
 		page = 1
 	}
+	if page < 1 {
+		page = 1
+	}
 
 	pageSize, err := strconv.Atoi(pageSizeStr)
 	if err != nil {
 		pageSize = 20
 	}
+	if pageSize < 1 {
+		pageSize = 20
+	}
+	if pageSize > 100 {
+		pageSize = 100
+	}
 
 	templates, err := h.service.GetPublicTemplates(category, page, pageSize)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		respondInternalError(c, err)
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"data":       templates,
-		"page":       page,
-		"page_size":  pageSize,
-		"total":      len(templates),
+		"data":      templates,
+		"page":      page,
+		"page_size": pageSize,
+		"total":     len(templates),
 	})
 }
 
@@ -143,19 +178,23 @@ func (h *TemplateHandler) UpdateTemplate(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid template ID"})
+		respondError(c, http.StatusBadRequest, "invalid template ID")
 		return
 	}
 
 	var req models.UpdateTemplateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, "invalid request payload")
+		return
+	}
+	if err := req.Validate(); err != nil {
+		respondError(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	template, err := h.service.UpdateTemplate(id, req)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		respondInternalError(c, err)
 		return
 	}
 
@@ -167,12 +206,12 @@ func (h *TemplateHandler) DeleteTemplate(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid template ID"})
+		respondError(c, http.StatusBadRequest, "invalid template ID")
 		return
 	}
 
 	if err := h.service.DeleteTemplate(id); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		respondInternalError(c, err)
 		return
 	}
 
@@ -186,7 +225,11 @@ func (h *TemplateHandler) ExtractVariables(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&body); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		respondError(c, http.StatusBadRequest, "invalid request payload")
+		return
+	}
+	if err := models.ValidateTemplateContent(body.Content); err != nil {
+		respondError(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
