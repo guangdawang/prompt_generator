@@ -16,11 +16,13 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     container_name: prompt_frontend
     env_file:
-      - ./frontend/.env.example
+      - ./frontend/.env
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://example.com/api}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
       PORT: ${FRONTEND_PORT:-3000}
     depends_on:
       - backend
@@ -41,8 +43,11 @@ services:
       - /bin/sh
       - -c
       - envsubst '$$APP_DOMAIN' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf && nginx -g 'daemon off;'
+    ports:
+      - '80:80'
     networks:
       - app
 
 networks:
   app:
+    enable_ipv6: true
