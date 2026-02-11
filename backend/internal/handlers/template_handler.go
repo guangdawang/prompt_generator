@@ -1,0 +1,195 @@
+package handlers
+
+import (
+	"net/http"
+	"strconv"
+
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	"prompt-backend/internal/models"
+	"prompt-backend/internal/services"
+)
+
+// TemplateHandler 模板处理器
+type TemplateHandler struct {
+	service *services.TemplateService
+}
+
+// NewTemplateHandler 创建模板处理器
+func NewTemplateHandler(service *services.TemplateService) *TemplateHandler {
+	return &TemplateHandler{service: service}
+}
+
+// Generate 生成提示词
+func (h *TemplateHandler) Generate(c *gin.Context) {
+	var req models.GenerateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	result, err := h.service.GeneratePrompt(req.TemplateID, req.Variables)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, models.GenerateResponse{
+		Result: result,
+		Prompt: result,
+	})
+}
+
+// CreateTemplate 创建模板
+func (h *TemplateHandler) CreateTemplate(c *gin.Context) {
+	var req models.CreateTemplateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// 从上下文中获取用户ID（需要认证中间件）
+	userID := uuid.New() // 临时使用，实际应该从认证上下文中获取
+
+	template, err := h.service.CreateTemplate(req, userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, template)
+}
+
+// GetTemplate 获取模板
+func (h *TemplateHandler) GetTemplate(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid template ID"})
+		return
+	}
+
+	template, err := h.service.GetTemplate(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Template not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, template)
+}
+
+// GetTemplates 获取模板列表
+func (h *TemplateHandler) GetTemplates(c *gin.Context) {
+	category := c.Query("category")
+	pageStr := c.DefaultQuery("page", "1")
+	pageSizeStr := c.DefaultQuery("page_size", "20")
+
+	page, err := strconv.Atoi(pageStr)
+	if err != nil {
+		page = 1
+	}
+
+	pageSize, err := strconv.Atoi(pageSizeStr)
+	if err != nil {
+		pageSize = 20
+	}
+
+	templates, err := h.service.GetTemplates(category, page, pageSize)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data":       templates,
+		"page":       page,
+		"page_size":  pageSize,
+		"total":      len(templates),
+	})
+}
+
+// GetPublicTemplates 获取公开模板
+func (h *TemplateHandler) GetPublicTemplates(c *gin.Context) {
+	category := c.Query("category")
+	pageStr := c.DefaultQuery("page", "1")
+	pageSizeStr := c.DefaultQuery("page_size", "20")
+
+	page, err := strconv.Atoi(pageStr)
+	if err != nil {
+		page = 1
+	}
+
+	pageSize, err := strconv.Atoi(pageSizeStr)
+	if err != nil {
+		pageSize = 20
+	}
+
+	templates, err := h.service.GetPublicTemplates(category, page, pageSize)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data":       templates,
+		"page":       page,
+		"page_size":  pageSize,
+		"total":      len(templates),
+	})
+}
+
+// UpdateTemplate 更新模板
+func (h *TemplateHandler) UpdateTemplate(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid template ID"})
+		return
+	}
+
+	var req models.UpdateTemplateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	template, err := h.service.UpdateTemplate(id, req)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, template)
+}
+
+// DeleteTemplate 删除模板
+func (h *TemplateHandler) DeleteTemplate(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid template ID"})
+		return
+	}
+
+	if err := h.service.DeleteTemplate(id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Template deleted successfully"})
+}
+
+// ExtractVariables 提取模板中的变量
+func (h *TemplateHandler) ExtractVariables(c *gin.Context) {
+	var body struct {
+		Content string `json:"content" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	variables := services.ExtractVariables(body.Content)
+	c.JSON(http.StatusOK, gin.H{"variables": variables})
+}
