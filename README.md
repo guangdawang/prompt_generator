@@ -50,6 +50,23 @@
     # 修改 APP_DOMAIN 等配置
     ```
 
+1. 启用 HTTPS（Let's Encrypt）：
+
+    确保域名已解析到服务器公网 IP，然后在根目录创建或更新 `.env`：
+
+    ```bash
+    APP_DOMAIN=your-domain.com
+    CERTBOT_EMAIL=your-email@example.com
+    ```
+
+    启动服务并申请证书：
+
+    ```bash
+    docker-compose up -d nginx backend frontend
+    docker-compose up -d certbot
+    docker-compose restart nginx
+    ```
+
 1. 启动所有服务：
 
     ```bash
@@ -60,8 +77,8 @@
 
     默认 NGINX 不映射端口，仅供容器内部访问。如果需要从宿主机访问，请在 NGINX 服务中添加端口映射（如 `80:80`），然后通过域名访问：
 
-    - 前端: <http://your-domain>
-    - 后端 API: <http://your-domain/api>
+    - 前端: <https://your-domain>
+    - 后端 API: <https://your-domain/api>
 
 ### 手动启动
 

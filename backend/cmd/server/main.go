@@ -7,12 +7,10 @@ import (
 	"prompt-backend/internal/database"
 	"prompt-backend/internal/handlers"
 	"prompt-backend/internal/middleware"
-	"prompt-backend/internal/models"
 	"prompt-backend/internal/services"
 	"prompt-backend/internal/services/repository"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 )
 
 func main() {
@@ -24,17 +22,15 @@ func main() {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
 
-	// 自动迁移数据库表
-	if err := database.AutoMigrate(
-		&models.PromptTemplate{},
-		&models.TemplateVariable{},
-	); err != nil {
-		log.Fatalf("Failed to migrate database: %v", err)
+	// 执行数据库迁移
+	if err := database.RunMigrations(database.GetDB()); err != nil {
+		log.Fatalf("Failed to run migrations: %v", err)
 	}
 
-	// 如果是开发环境，插入一些示例数据
+	// 如果是开发环境，插入一些示例数据（可选，因为迁移文件中已包含）
 	if os.Getenv("ENV") == "development" {
-		seedSampleData()
+		// 迁移文件已经包含了示例数据，这里可以留空或者添加额外的开发数据
+		log.Println("Development environment detected - migrations include sample data")
 	}
 
 	// 创建仓库和服务
@@ -92,55 +88,4 @@ func main() {
 	if err := router.Run(":" + port); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
-}
-
-// seedSampleData 插入示例数据
-func seedSampleData() {
-	db := database.GetDB()
-
-	sampleTemplates := []models.PromptTemplate{
-		{
-			ID:          uuid.New(),
-			UserID:      uuid.New(),
-			Name:        "代码解释器",
-			Description: "解释代码的功能和逻辑",
-			Content:     "请解释以下{{language}}代码的功能和逻辑：\n\n```{{language}}\n{{code}}\n```\n\n请详细说明：\n1. 代码的主要功能\n2. 关键逻辑和算法\n3. 可能的优化建议",
-			Category:    "开发",
-			IsPublic:    true,
-			UsageCount:  0,
-		},
-		{
-			ID:          uuid.New(),
-			UserID:      uuid.New(),
-			Name:        "文章摘要",
-			Description: "生成文章摘要",
-			Content:     "请为以下{{type}}文章生成一个{{length}}的摘要：\n\n{{content}}\n\n摘要要求：\n- 保留核心观点\n- 语言简洁明了\n- 突出重点信息",
-			Category:    "写作",
-			IsPublic:    true,
-			UsageCount:  0,
-		},
-		{
-			ID:          uuid.New(),
-			UserID:      uuid.New(),
-			Name:        "邮件回复",
-			Description: "生成专业的邮件回复",
-			Content:     "请为以下邮件内容生成一个{{tone}}的回复：\n\n邮件主题：{{subject}}\n邮件内容：\n{{content}}\n\n请确保回复：\n- 专业得体\n- 语气{{tone}}\n- 回复内容相关且有价值",
-			Category:    "办公",
-			IsPublic:    true,
-			UsageCount:  0,
-		},
-	}
-
-	for _, tmpl := range sampleTemplates {
-		// 检查是否已存在
-		var existing models.PromptTemplate
-		if db.Where("name = ?", tmpl.Name).First(&existing).Error == nil {
-			continue
-		}
-		if err := db.Create(&tmpl).Error; err != nil {
-			log.Printf("Failed to create sample template: %v", err)
-		}
-	}
-
-	log.Println("Sample data seeded successfully")
 }

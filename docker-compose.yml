@@ -9,6 +9,10 @@ services:
     environment:
       PORT: ${PORT:-8080}
       ENV: ${ENV:-development}
+    depends_on:
+      - db
+    ports:
+      - '8080:8080'
     networks:
       - app
 
@@ -17,37 +21,34 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080/api}
     container_name: prompt_frontend
     env_file:
       - ./frontend/.env
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080/api}
       PORT: ${FRONTEND_PORT:-3000}
     depends_on:
       - backend
+    ports:
+      - '3000:3000'
     networks:
       - app
 
-  nginx:
-    image: nginx:1.27-alpine
-    container_name: prompt_nginx
-    depends_on:
-      - backend
-      - frontend
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf.template:ro
+  db:
+    image: postgres:15-alpine
+    container_name: prompt_postgres
+    restart: unless-stopped
     environment:
-      APP_DOMAIN: ${APP_DOMAIN:-example.com}
-    command:
-      - /bin/sh
-      - -c
-      - envsubst '$$APP_DOMAIN' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf && nginx -g 'daemon off;'
+      POSTGRES_USER: ${POSTGRES_USER:-prompt}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-prompt_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-prompt_db}
+    volumes:
+      - D:/Development/Docker/PostgresDB:/var/lib/postgresql/data
     ports:
-      - '80:80'
+      - '5432:5432'
     networks:
       - app
 
 networks:
   app:
-    enable_ipv6: true

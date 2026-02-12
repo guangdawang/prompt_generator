@@ -23,6 +23,9 @@ WORKDIR /root/
 # 复制构建的可执行文件
 COPY --from=builder /app/main .
 
+# 复制迁移文件
+COPY --from=builder /app/migrations ./migrations
+
 # 暴露端口
 EXPOSE 8080
 
