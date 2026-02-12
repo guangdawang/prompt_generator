@@ -41,6 +41,21 @@ func RunMigrations(db *gorm.DB) error {
 
 	// 执行每个迁移文件
 	for _, file := range files {
+		// 对于包含 seed 的迁移文件，采用安全策略：
+		// 仅在目标表为空时执行，以避免每次服务重启时重新插入被删除的数据。
+		isSeed := strings.Contains(strings.ToLower(filepath.Base(file)), "seed")
+		if isSeed {
+			var cnt int64
+			// 检查 prompt_templates 表是否已有数据
+			if err := db.Table("prompt_templates").Count(&cnt).Error; err != nil {
+				return fmt.Errorf("failed to check prompt_templates count: %w", err)
+			}
+			if cnt > 0 {
+				log.Printf("Skipping seed migration %s because prompt_templates has %d rows", file, cnt)
+				continue
+			}
+		}
+
 		log.Printf("Executing migration: %s", file)
 
 		content, err := os.ReadFile(file)

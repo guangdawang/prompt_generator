@@ -21,6 +21,17 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response.data,
   (error) => {
+    try {
+      const resp = error?.response?.data;
+      if (resp) {
+        const msg = resp.message || resp.error || (typeof resp === 'string' ? resp : undefined);
+        if (msg) {
+          error.message = msg;
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
     console.error('API Error:', error);
     return Promise.reject(error);
   }

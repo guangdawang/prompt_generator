@@ -67,7 +67,8 @@ export default function GeneratePage() {
       setResult(response.result);
     } catch (error) {
       console.error('Failed to generate:', error);
-      alert('生成失败，请重试');
+      const msg = (error as any)?.message || '生成失败，请重试';
+      alert(msg);
     } finally {
       setLoading(false);
     }
