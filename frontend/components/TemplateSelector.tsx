@@ -7,10 +7,11 @@ import TemplateCard from './TemplateCard';
 interface TemplateSelectorProps {
   onSelect: (template: Template) => void;
   onEdit?: (template: Template) => void;
+  onDelete?: (template: Template) => void;
   selectedCategory?: string;
 }
 
-export default function TemplateSelector({ onSelect, onEdit, selectedCategory }: TemplateSelectorProps) {
+export default function TemplateSelector({ onSelect, onEdit, onDelete, selectedCategory }: TemplateSelectorProps) {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -75,6 +76,7 @@ export default function TemplateSelector({ onSelect, onEdit, selectedCategory }:
               template={template}
               onSelect={onSelect}
               onEdit={onEdit}
+              onDelete={onDelete}
             />
           ))}
         </div>

@@ -111,6 +111,24 @@ export default function GeneratePage() {
     setEditorOpen(true);
   };
 
+  const handleDelete = async (template: Template) => {
+    if (!template) return;
+    if (!confirm('确定要删除该模板吗？此操作不可恢复。')) return;
+
+    try {
+      await templateAPI.deleteTemplate(template.id);
+      if (selectedTemplate && selectedTemplate.id === template.id) {
+        setSelectedTemplate(null);
+        setVariables({});
+        setResult('');
+      }
+      setRefreshKey((prev) => prev + 1);
+    } catch (error) {
+      console.error('Failed to delete template:', error);
+      alert('删除失败，请重试');
+    }
+  };
+
   const handleOpenEdit = () => {
     if (!selectedTemplate) return;
     setEditingTemplate(selectedTemplate);
@@ -172,6 +190,9 @@ export default function GeneratePage() {
               key={refreshKey}
               onSelect={handleTemplateSelect}
               onEdit={handleEditFromList}
+              onDelete={async (t) => {
+                await handleDelete(t);
+              }}
             />
           </div>
         ) : (
@@ -183,12 +204,20 @@ export default function GeneratePage() {
               >
                 ← 返回模板列表
               </button>
-              <button
-                onClick={handleOpenEdit}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                编辑模板
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleOpenEdit}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  编辑模板
+                </button>
+                <button
+                  onClick={() => selectedTemplate && handleDelete(selectedTemplate)}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                >
+                  删除模板
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

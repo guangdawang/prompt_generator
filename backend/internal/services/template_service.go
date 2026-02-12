@@ -3,7 +3,9 @@ package services
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"regexp"
+	"strings"
 	"text/template"
 	"time"
 
@@ -33,6 +35,10 @@ func (s *TemplateService) GeneratePrompt(templateID uuid.UUID, variables map[str
 
 	// 解析模板
 	normalizedContent := normalizeTemplateContent(tmpl.Content)
+	// 简单检查模板占位符对是否匹配，避免 text/template 解析时出现未捕获的错误
+	if strings.Count(normalizedContent, "{{") != strings.Count(normalizedContent, "}}") {
+		return "", fmt.Errorf("invalid template content: unbalanced braces")
+	}
 	t, err := template.New(tmpl.Name).Parse(normalizedContent)
 	if err != nil {
 		return "", err

@@ -6,9 +6,10 @@ interface TemplateCardProps {
   template: Template;
   onSelect: (template: Template) => void;
   onEdit?: (template: Template) => void;
+  onDelete?: (template: Template) => void;
 }
 
-export default function TemplateCard({ template, onSelect, onEdit }: TemplateCardProps) {
+export default function TemplateCard({ template, onSelect, onEdit, onDelete }: TemplateCardProps) {
   return (
     <div
       className="border border-gray-200 rounded-lg p-4 cursor-pointer hover:shadow-md transition-shadow duration-200 hover:border-blue-300 bg-white"
@@ -30,6 +31,20 @@ export default function TemplateCard({ template, onSelect, onEdit }: TemplateCar
               className="px-2 py-1 text-xs bg-blue-50 text-blue-700 rounded hover:bg-blue-100"
             >
               编辑
+            </button>
+          )}
+          {onDelete && (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                if (confirm('确定要删除该模板吗？此操作不可恢复。')) {
+                  onDelete(template);
+                }
+              }}
+              className="px-2 py-1 text-xs bg-red-50 text-red-700 rounded hover:bg-red-100"
+            >
+              删除
             </button>
           )}
         </div>

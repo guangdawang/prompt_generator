@@ -33,7 +33,8 @@ func (j JSONB) Value() (driver.Value, error) {
 	if len(j) == 0 {
 		return nil, nil
 	}
-	return json.RawMessage(j).MarshalJSON()
+	// 返回原始 JSON 字节，不要再次 Marshal，避免双重编码
+	return []byte(j), nil
 }
 
 func (j *JSONB) Scan(value interface{}) error {
@@ -41,11 +42,22 @@ func (j *JSONB) Scan(value interface{}) error {
 		*j = nil
 		return nil
 	}
-	bytes, ok := value.([]byte)
-	if !ok {
+	switch v := value.(type) {
+	case []byte:
+		*j = JSONB(append([]byte(nil), v...))
+		return nil
+	case string:
+		*j = JSONB([]byte(v))
+		return nil
+	default:
+		// Fallback: try to marshal the value to JSON
+		b, err := json.Marshal(v)
+		if err != nil {
+			return err
+		}
+		*j = JSONB(b)
 		return nil
 	}
-	return json.Unmarshal(bytes, j)
 }
 
 // PromptTemplate 提示词模板
