@@ -38,30 +38,30 @@
 
 1. 克隆项目并进入目录：
 
-```bash
-cd prompt_generator
-```
+    ```bash
+    cd prompt_generator
+    ```
 
 1. 配置环境变量（可选但推荐）：
 
-```bash
-cp backend/.env.example backend/.env
-cp frontend/.env.example frontend/.env
-# 修改 APP_DOMAIN 等配置
-```
+    ```bash
+    cp backend/.env.example backend/.env
+    cp frontend/.env.example frontend/.env
+    # 修改 APP_DOMAIN 等配置
+    ```
 
 1. 启动所有服务：
 
-```bash
-docker-compose up -d
-```
+    ```bash
+    docker-compose up -d
+    ```
 
 1. 访问应用：
 
-默认 NGINX 不映射端口，仅供容器内部访问。如果需要从宿主机访问，请在 NGINX 服务中添加端口映射（如 `80:80`），然后通过域名访问：
+    默认 NGINX 不映射端口，仅供容器内部访问。如果需要从宿主机访问，请在 NGINX 服务中添加端口映射（如 `80:80`），然后通过域名访问：
 
-- 前端: <http://your-domain>
-- 后端 API: <http://your-domain/api>
+    - 前端: <http://your-domain>
+    - 后端 API: <http://your-domain/api>
 
 ### 手动启动
 
@@ -69,48 +69,48 @@ docker-compose up -d
 
 1. 进入后端目录：
 
-```bash
-cd backend
-```
+    ```bash
+    cd backend
+    ```
 
 1. 配置环境变量：
 
-```bash
-cp .env.example .env
-# 编辑 .env 文件，设置数据库连接信息
-```
+    ```bash
+    cp .env.example .env
+    # 编辑 .env 文件，设置数据库连接信息
+    ```
 
 1. 安装依赖：
 
-```bash
-go mod download
-```
+    ```bash
+    go mod download
+    ```
 
 1. 运行服务：
 
-```bash
-go run cmd/server/main.go
-```
+    ```bash
+    go run cmd/server/main.go
+    ```
 
 #### 前端（手动启动）
 
 1. 进入前端目录：
 
-```bash
-cd frontend
-```
+    ```bash
+    cd frontend
+    ```
 
 1. 安装依赖：
 
-```bash
-npm install
-```
+    ```bash
+    npm install
+    ```
 
 1. 运行开发服务器：
 
-```bash
-npm run dev
-```
+    ```bash
+    npm run dev
+    ```
 
 1. 访问 <http://localhost:3000>
 
