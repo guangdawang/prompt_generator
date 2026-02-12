@@ -1,220 +1,67 @@
-# 提示词模板系统
+# Prompt Generator
 
-一个功能完整的提示词模板生成和管理系统，使用 Go 后端和 Next.js 前端构建。
+一个用于管理和使用提示模板（prompt templates）的开源示例项目，包含 Go 后端和 Next.js 前端。该仓库演示了模板的创建、变量输入和生成提示的工作流，适合作为构建提示/模板管理工具的起点。
 
-## 功能特性
+## 主要特性
 
-- 📝 模板管理：创建、编辑、删除提示词模板
-- 🎯 变量支持：灵活的变量定义和替换
-- 🌐 公开/私有模板：支持模板共享
-- 🔍 模板搜索：快速查找所需模板
-- 📊 使用统计：追踪模板使用次数
-- 🎨 现代化 UI：基于 Tailwind CSS 的美观界面
+- 模板管理：创建、编辑、选择提示模板。
+- 可配置变量输入：为模板提供动态变量以生成最终提示。
+- 前后端分离：Go 后端（API、数据库迁移）、Next.js 前端（UI）。
+- Docker 支持：可通过 `docker-compose` 一键运行整个应用。
 
-## 技术栈
+## 仓库结构（概要）
 
-### 后端
+- `backend/` — Go 后端源码，包含数据库、服务、处理器。
+- `frontend/` — Next.js 前端源码和组件。
+- `migrations/` — 数据库迁移和种子数据。
+- `docker-compose.yml` — 用于本地快速启动（包含后端、前端、数据库）。
 
-- Go 1.21
-- Gin Web 框架
-- GORM (PostgreSQL)
-- UUID 生成
+## 快速开始（使用 Docker Compose）
 
-### 前端
+开发机器上只需 Docker 与 Docker Compose：
 
-- Next.js 14 (App Router)
-- React 18
-- TypeScript
-- Tailwind CSS
-- Axios
+```bash
+docker-compose up --build
+```
 
-### 数据库
+服务启动后：
 
-- PostgreSQL 15
+- 前端（Next.js）通常在 `http://localhost:3000`
+- 后端 API 通常在 `http://localhost:8080`（参见 `docker-compose.yml`）
 
-## 快速开始
+## 本地开发（不使用 Docker）
 
-### 使用 Docker Compose（推荐）
-
-1. 克隆项目并进入目录：
-
-    ```bash
-    cd prompt_generator
-    ```
-
-1. 配置环境变量（可选但推荐）：
-
-    ```bash
-    cp backend/.env.example backend/.env
-    cp frontend/.env.example frontend/.env
-    ```
-
-1. 启动所有服务：
-
-    ```bash
-    docker-compose up -d
-    ```
-
-1. 访问应用：
-
-    - 前端: <http://localhost:3000>
-    - 后端 API: <http://localhost:8080/api>
-
-### 手动启动
-
-#### 后端（手动启动）
-
-1. 进入后端目录：
-
-    ```bash
-    cd backend
-    ```
-
-1. 配置环境变量：
-
-    ```bash
-    cp .env.example .env
-    # 编辑 .env 文件，设置数据库连接信息
-    ```
-
-1. 安装依赖：
-
-    ```bash
-    go mod download
-    ```
-
-1. 运行服务：
-
-    ```bash
-    go run cmd/server/main.go
-    ```
-
-#### 前端（手动启动）
-
-1. 进入前端目录：
-
-    ```bash
-    cd frontend
-    ```
-
-1. 安装依赖：
-
-    ```bash
-    npm install
-    ```
-
-1. 运行开发服务器：
-
-    ```bash
-    npm run dev
-    ```
-
-1. 访问 <http://localhost:3000>
-
-## API 端点
-
-### 健康检查
-
-- `GET /api/health` - 检查服务状态
-
-### 模板管理
-
-- `GET /api/templates` - 获取模板列表（支持分类筛选）
-- `GET /api/templates/public` - 获取公开模板
-- `GET /api/templates/:id` - 获取单个模板
-- `POST /api/templates` - 创建新模板
-- `PUT /api/templates/:id` - 更新模板
-- `DELETE /api/templates/:id` - 删除模板
-
-### 提示词生成
-
-- `POST /api/generate` - 生成提示词
-- `POST /api/generate/extract-variables` - 从模板内容提取变量
-
-## 数据库结构
-
-### prompt_templates
-
-- `id` (UUID) - 主键
-- `user_id` (UUID) - 用户ID
-- `name` (VARCHAR) - 模板名称
-- `description` (TEXT) - 模板描述
-- `content` (TEXT) - 模板内容
-- `variables` (JSONB) - 变量定义
-- `category` (VARCHAR) - 分类
-- `is_public` (BOOLEAN) - 是否公开
-- `usage_count` (INTEGER) - 使用次数
-- `created_at` (TIMESTAMP) - 创建时间
-- `updated_at` (TIMESTAMP) - 更新时间
-
-### template_variables
-
-- `id` (UUID) - 主键
-- `template_id` (UUID) - 模板ID
-- `name` (VARCHAR) - 变量名
-- `display_name` (VARCHAR) - 显示名称
-- `description` (TEXT) - 描述
-- `default_value` (TEXT) - 默认值
-- `required` (BOOLEAN) - 是否必填
-- `sort_order` (INTEGER) - 排序
-
-## 示例模板
-
-系统预置了几个示例模板：
-
-1. **代码解释器** - 解释代码的功能和逻辑
-2. **文章摘要** - 生成文章摘要
-3. **邮件回复** - 生成专业的邮件回复
-
-## 开发
-
-### 后端开发
+后端（Go）：
 
 ```bash
 cd backend
-# 运行测试
-go test ./...
-
-# 格式化代码
-go fmt ./...
-
-# 代码检查
-go vet ./...
+go mod download
+go run ./cmd/server
 ```
 
-### 前端开发
+前端（Next.js）：
 
 ```bash
 cd frontend
-# 运行开发服务器
+npm install
 npm run dev
-
-# 构建生产版本
-npm run build
-
-# 类型检查
-npm run lint
 ```
 
-## 部署
+> 注意：后端会连接数据库（请确保环境变量正确或启动本地/Postgres 实例）。
 
-### 生产环境配置
+## 数据库与迁移
 
-1. 修改 `.env` 文件，设置生产环境变量
-2. 使用 `docker-compose.prod.yml` 进行部署
-3. 设置数据库备份策略
+迁移 SQL 存放在 `migrations/`，初始化或重建数据库时请运行这些脚本。后端内部也包含与数据库初始化/迁移逻辑（见 `backend/internal/database`）。
 
-### 性能优化
+## 开发提示
 
-- 启用数据库连接池
-- 使用 CDN 加速静态资源
-- 配置 Redis 缓存
-- 启用 Gzip 压缩
+- 后端使用模块化结构：`services`、`repository`、`handlers`，便于扩展。
+- 前端组件集中在 `frontend/components`，可以快速复用或替换 UI。
 
 ## 贡献
 
-欢迎提交 Issue 和 Pull Request！
+欢迎提交 issue 或 PR。请在变更中保持风格一致、编写清晰的提交说明，并在必要时更新或添加迁移脚本。
 
 ## 许可证
 
-MIT License
+本项目采用 MIT 许可证。详见 [LICENSE](LICENSE)。
