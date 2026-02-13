@@ -25,7 +25,7 @@ export default function TemplateSelector({ onSelect, onEdit, onDelete, selectedC
     try {
       setLoading(true);
       setError(null);
-      const response = await templateAPI.getPublicTemplates(selectedCategory);
+      const response = await templateAPI.getTemplates(selectedCategory);
       setTemplates(response.data || []);
     } catch (error) {
       console.error('Failed to load templates:', error);

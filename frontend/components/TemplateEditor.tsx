@@ -99,6 +99,15 @@ export default function TemplateEditor({ template, onCancel, onSaved }: Template
         required: variable.required ?? true,
       }));
 
+    // 客户端校验变量名，确保符合后端要求：^[a-zA-Z_][a-zA-Z0-9_]*$
+    const namePattern = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
+    const invalid = sanitizedVariables.filter((v) => !namePattern.test(v.name));
+    if (invalid.length > 0) {
+      const names = invalid.map((v) => v.name || '(empty)').join(', ');
+      alert(`变量名格式错误：${names}\n变量名只能包含字母、数字和下划线，且不能以数字开头。`);
+      return;
+    }
+
     const payload: CreateTemplateRequest = {
       name: name.trim(),
       description: description.trim(),

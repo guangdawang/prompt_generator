@@ -60,6 +60,25 @@ func (j *JSONB) Scan(value interface{}) error {
 	}
 }
 
+// MarshalJSON 保证 JSONB 在编码为 JSON 时以原始 JSON 字节输出（例如数组/对象），
+// 而不是作为 base64 编码的字符串。
+func (j JSONB) MarshalJSON() ([]byte, error) {
+	if len(j) == 0 {
+		return []byte("null"), nil
+	}
+	return []byte(j), nil
+}
+
+// UnmarshalJSON 用于将原始 JSON 解码到 JSONB
+func (j *JSONB) UnmarshalJSON(b []byte) error {
+	if j == nil {
+		return errors.New("nil JSONB")
+	}
+	// 直接复制字节
+	*j = append((*j)[0:0], b...)
+	return nil
+}
+
 // PromptTemplate 提示词模板
 type PromptTemplate struct {
 	ID          uuid.UUID `gorm:"type:uuid;primary_key" json:"id"`

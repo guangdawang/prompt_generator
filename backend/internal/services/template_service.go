@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
@@ -30,6 +31,10 @@ func (s *TemplateService) GeneratePrompt(templateID uuid.UUID, variables map[str
 	// 获取模板
 	tmpl, err := s.repo.GetByID(templateID)
 	if err != nil {
+		// 明确返回未找到的友好错误，便于 handler 返回 404 而不是 500
+		if strings.Contains(strings.ToLower(err.Error()), "record not found") {
+			return "", fmt.Errorf("template not found")
+		}
 		return "", err
 	}
 
@@ -62,8 +67,24 @@ func (s *TemplateService) GeneratePrompt(templateID uuid.UUID, variables map[str
 }
 
 func normalizeTemplateContent(content string) string {
-	re := regexp.MustCompile(`\{\{\s*([a-zA-Z_]\w*)\s*\}\}`)
-	return re.ReplaceAllString(content, "{{.$1}}")
+	// 匹配 {{...}} 内的内容（尽量宽松），然后根据内容是否为合法 ASCII 变量名分别处理：
+	// - 若为 ASCII 变量名：转换为 {{.name}} 来从传入 map 中读取值
+	// - 若包含非 ASCII 字符（比如中文）：将其作为字面量文本输出，使用 printf 转义以保证模板解析安全
+	re := regexp.MustCompile(`\{\{\s*([^\}\s]+)\s*\}\}`)
+	asciiIdent := regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
+
+	return re.ReplaceAllStringFunc(content, func(m string) string {
+		sub := re.FindStringSubmatch(m)
+		if len(sub) < 2 {
+			return m
+		}
+		name := sub[1]
+		if asciiIdent.MatchString(name) {
+			return "{{." + name + "}}"
+		}
+		// 对非 ASCII 内容，作为字面量返回（安全地加引号）
+		return fmt.Sprintf("{{printf %s}}", strconv.Quote(name))
+	})
 }
 
 // CreateTemplate 创建模板

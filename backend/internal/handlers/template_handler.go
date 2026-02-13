@@ -37,6 +37,10 @@ func (h *TemplateHandler) Generate(c *gin.Context) {
 	result, err := h.service.GeneratePrompt(req.TemplateID, req.Variables)
 	if err != nil {
 		// 如果是模板内容或解析相关错误，返回 400 并显示错误信息
+		if strings.Contains(err.Error(), "template not found") {
+			respondError(c, http.StatusNotFound, "template not found")
+			return
+		}
 		if strings.Contains(err.Error(), "invalid template content") || strings.Contains(err.Error(), "unexpected") || strings.Contains(err.Error(), "parse") {
 			respondError(c, http.StatusBadRequest, err.Error())
 			return
