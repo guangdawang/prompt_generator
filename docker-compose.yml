@@ -14,7 +14,7 @@ services:
     ports:
       - '8080:8080'
     networks:
-      - app
+      - app-network
 
   frontend:
     build:
@@ -28,12 +28,13 @@ services:
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080/api}
       PORT: ${FRONTEND_PORT:-3000}
+      HOST: 0.0.0.0
     depends_on:
       - backend
     ports:
       - '3000:3000'
     networks:
-      - app
+      - app-network
 
   db:
     image: postgres:15-alpine
@@ -48,7 +49,9 @@ services:
     ports:
       - '5432:5432'
     networks:
-      - app
+      - app-network
 
 networks:
-  app:
+  app-network:
+    external: true
+    name: app-network
