@@ -7,7 +7,7 @@
 - 模板管理：创建、编辑、选择提示模板。
 - 可配置变量输入：为模板提供动态变量以生成最终提示。
 - 前后端分离：Go 后端（API、数据库迁移）、Next.js 前端（UI）。
-- Docker 支持：可通过 `docker-compose` 一键运行整个应用。
+- Docker 支持：可通过 `docker compose` 一键运行整个应用。
 
 ## 仓库结构（概要）
 
@@ -21,7 +21,7 @@
 开发机器上只需 Docker 与 Docker Compose：
 
 ```bash
-docker-compose up --build
+docker compose up --build
 ```
 
 服务启动后：
