@@ -54,4 +54,3 @@ services:
 networks:
   app-network:
     external: true
-    name: app-network
