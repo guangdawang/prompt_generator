@@ -6,9 +6,6 @@ services:
     container_name: prompt_backend
     env_file:
       - ./backend/.env
-    environment:
-      PORT: ${PORT}
-      ENV: ${ENV}
     depends_on:
       - db
     networks:
@@ -18,15 +15,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-      args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     container_name: prompt_frontend
-    env_file:
-      - ./frontend/.env
-    environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
-      PORT: ${FRONTEND_PORT}
-      HOST: 0.0.0.0
     depends_on:
       - backend
     networks:

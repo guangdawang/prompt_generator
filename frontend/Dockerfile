@@ -12,10 +12,6 @@ RUN npm ci
 # 复制源代码
 COPY . .
 
-# 注入构建期环境变量（Next.js 会在构建时内联）
-ARG NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
-
 # 构建应用
 RUN npm run build
 

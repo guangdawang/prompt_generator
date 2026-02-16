@@ -11,7 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-const defaultAllowedOrigins = "http://localhost:3000"
+const defaultAllowedOrigins = "*"
 
 func SecurityHeaders() gin.HandlerFunc {
 	return func(c *gin.Context) {

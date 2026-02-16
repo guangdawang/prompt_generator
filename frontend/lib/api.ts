@@ -1,7 +1,14 @@
 import axios from 'axios';
 
+const getBaseURL = () => {
+  if (typeof window !== 'undefined') {
+    return window.location.origin + '/api';
+  }
+  return process.env.NEXT_PUBLIC_API_URL || 'http://backend:8080/api';
+};
+
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api',
+  baseURL: getBaseURL(),
   headers: {
     'Content-Type': 'application/json',
   },
